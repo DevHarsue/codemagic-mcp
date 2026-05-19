@@ -245,10 +245,10 @@ def get_build_status(build_id: str) -> Dict[str, Any]:
 def cancel_build(build_id: str) -> Dict[str, Any]:
     """
     Cancel a running build on Codemagic.
-    
+
     Args:
         build_id: The build identifier
-        
+
     Returns:
         Response from the API (empty if successful)
     """
@@ -257,6 +257,34 @@ def cancel_build(build_id: str) -> Dict[str, Any]:
         return {"message": "Build has already finished"}
     response.raise_for_status()
     return response.json() if response.content else {}
+
+@mcp.tool()
+def get_build_step_log(build_id: str, step_id: str) -> str:
+    """
+    Get the raw log output for a specific build step on Codemagic.
+
+    Calls the undocumented endpoint that the Codemagic web dashboard uses
+    internally (GET /builds/{build_id}/step/{step_id}), which returns the
+    step's stdout/stderr as text/plain. Use this to diagnose failed builds
+    without manual dashboard access.
+
+    The step_id is the `_id` field of any entry in the `buildActions` array
+    returned by `get_build_status`, or equivalently the last path segment
+    of that step's `logUrl`.
+
+    Args:
+        build_id: The build identifier
+        step_id: The build step identifier
+
+    Returns:
+        The step log as plain text
+    """
+    response = requests.get(
+        f"{BASE_URL}/builds/{build_id}/step/{step_id}",
+        headers=get_headers(),
+    )
+    response.raise_for_status()
+    return response.text
 
 # Caches API
 
